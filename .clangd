@@ -1,0 +1,50 @@
+InlayHints:
+  ParameterNames: false
+  DeducedTypes: true
+Completion:
+  AllScopes: true
+Hover:
+  ShowAKA: true
+Diagnostics:
+  UnusedIncludes: Strict
+  ClangTidy:
+    Add:
+      [
+        bugprone-*,
+        cert-*,
+        modernize-*,
+        performance-*,
+        readability-identifier-naming,
+      ]
+    Remove: [
+        bugprone-easily-swappable-parameters,
+        modernize-use-trailing-return-type,
+        # Well, labs require that
+        modernize-avoid-c-arrays,
+      ]
+    CheckOptions:
+      # NOTE: Camel_Snake_Case exists, if needed in the future
+      readability-identifier-naming.AbstractClassCase: CamelCase
+
+      readability-identifier-naming.ClassCase: CamelCase
+
+      readability-identifier-naming.PrivateMemberCase: lower_case
+      readability-identifier-naming.PrivateMemberSuffix: _
+
+      readability-identifier-naming.ConstantCase: CamelCase
+      readability-identifier-naming.ConstantPrefix: k
+
+      readability-identifier-naming.ConstantParameterCase: lower_case
+
+      readability-identifier-naming.ConstantPointerParameterCase: lower_case
+
+      readability-identifier-naming.EnumCase: CamelCase
+
+      readability-identifier-naming.EnumConstantCase: CamelCase
+      readability-identifier-naming.EnumConstantPrefix: k
+
+      readability-identifier-naming.FunctionCase: CamelCase # personal preference
+
+      readability-identifier-naming.MacroDefinitionCase: UPPER_CASE
+
+      readability-identifier-naming.LocalVariableCase: lower_case

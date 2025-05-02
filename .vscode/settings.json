@@ -1,0 +1,39 @@
+{
+    "[cpp]": {
+        "editor.tabSize": 2,
+        "editor.insertSpaces": true
+    },
+    "[c]": {
+        "editor.tabSize": 2,
+        "editor.insertSpaces": true
+    },
+    "[cmake]": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "cheshirekow.cmake-format",
+        "editor.tabSize": 4,
+        "editor.insertSpaces": true,
+    },
+    "[yaml]": {
+        "editor.insertSpaces": true,
+        "editor.tabSize": 2,
+        "editor.autoIndent": "advanced",
+        "diffEditor.ignoreTrimWhitespace": false
+    },
+    "cmake.options.statusBarVisibility": "icon",
+    "cmake.options.advanced": {
+        "configurePreset": {
+            "statusBarVisibility": "icon",
+            "statusBarLength": 15
+        }
+    },
+    "lldb.displayFormat": "auto",
+    "lldb.showDisassembly": "never",
+    "lldb.dereferencePointers": true,
+    "lldb.consoleMode": "commands",
+    "cmake.configureArgs": [
+        "-DCMAKE_LINKER_TYPE=MOLD"
+    ],
+    "yaml.schemas": {
+        "https://json.schemastore.org/clangd.json": "file:///home/jfomit/Uni/453501/%D0%9E%D0%90%D0%B8%D0%9F/lr8/.clangd"
+    }
+}
