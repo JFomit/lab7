@@ -43,7 +43,7 @@ Diagnostics:
       readability-identifier-naming.EnumConstantCase: CamelCase
       readability-identifier-naming.EnumConstantPrefix: k
 
-      readability-identifier-naming.FunctionCase: CamelCase # personal preference
+      # readability-identifier-naming.FunctionCase: CamelCase # personal preference
 
       readability-identifier-naming.MacroDefinitionCase: UPPER_CASE
 
