@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <type_traits>
 #include <utility>
+#include "optional_ref.h"
 
 namespace lab {
 
@@ -22,6 +23,19 @@ class TreeMap {
  public:
   TreeMap() : root_(nullptr) {}
   ~TreeMap() { delete root_; }
+
+  TreeMap(const TreeMap<Key, Value> &other)
+      : root_(other.root_->copy()), count_(other.count_) {}
+  TreeMap<Key, Value> &operator=(const TreeMap<Key, Value> &rhs) {
+    if (this == &rhs) {
+      return *this;
+    }
+    delete root_;
+    root_ = rhs.root_->copy();
+    count_ = rhs.count_;
+
+    return *this;
+  }
 
   void Insert(const Key &key, Value &&value) {
     if (count_ == 0) {
@@ -83,6 +97,58 @@ class TreeMap {
     }
   }
 
+  lab::OptionalRef<Value> Find(const Key &key) {
+    Node *current = root_;
+    if (current == nullptr) {
+      return lab::NullOpt;
+    }
+
+    while (true) {
+      if (key > current->key) {
+        // right subtree
+        if (current->right == nullptr) {
+          return lab::NullOpt;
+        }
+        current = current->right;
+      } else if (key < current->key) {
+        // left subtree
+        if (current->left == nullptr) {
+          return lab::NullOpt;
+        }
+        current = current->left;
+      } else /* if (key == current.key) */ {
+        // current node
+        return lab::MakeOptional(current->data);
+      }
+    }
+  }
+
+  const lab::OptionalRef<const Value> Find(const Key &key) const {
+    Node *current = root_;
+    if (current == nullptr) {
+      return lab::NullOpt;
+    }
+
+    while (true) {
+      if (key > current->key) {
+        // right subtree
+        if (current->right == nullptr) {
+          return lab::NullOpt;
+        }
+        current = current->right;
+      } else if (key < current->key) {
+        // left subtree
+        if (current->left == nullptr) {
+          return lab::NullOpt;
+        }
+        current = current->left;
+      } else /* if (key == current.key) */ {
+        // current node
+        return lab::MakeOptional(current->data);
+      }
+    }
+  }
+
  private:
   struct Node {
     Node(const Key &key, Value &&data)
@@ -93,9 +159,19 @@ class TreeMap {
           data(std::forward<Args>(args)...),
           left(nullptr),
           right(nullptr) {}
+    Node(const Node &other)
+        : key(other.key),
+          data(other.data),
+          left(other.left == nullptr ? nullptr : other.left->copy()),
+          right(other.right == nullptr ? nullptr : other.right->copy()) {}
     ~Node() {
       delete left;
       delete right;
+    }
+
+    [[nodiscard]] Node *copy() const {
+      auto *copy = new Node(*this);
+      return copy;
     }
 
     Key key;
@@ -121,7 +197,7 @@ class TreeMap {
     }
   }
   template <typename F, typename T>
-  T CallOnNodeFold(F &&func, T previous, Node *node) {
+  T CallOnNode(F &&func, T previous, Node *node) {
     if constexpr (std::is_invocable_v<F, T, Value &>) {
       return func(previous, node->data);
     } else if constexpr (std::is_invocable_v<F, T, const Key &, Value &>) {
@@ -141,18 +217,18 @@ class TreeMap {
 
     if constexpr (Traversal == TreeTraversal::kPreOrder) {
       // NLR
-      CallOnNodeFold(std::forward<F>(func), node);
+      CallOnNode(std::forward<F>(func), node);
       TraverseInternal<Traversal>(std::forward<F>(func), node->left);
       TraverseInternal<Traversal>(std::forward<F>(func), node->right);
     } else if constexpr (Traversal == TreeTraversal::kPostOrder) {
       // LRN
       TraverseInternal<Traversal>(std::forward<F>(func), node->left);
       TraverseInternal<Traversal>(std::forward<F>(func), node->right);
-      CallOnNodeFold(std::forward<F>(func), node);
+      CallOnNode(std::forward<F>(func), node);
     } else if constexpr (Traversal == TreeTraversal::kInOrder) {
       // LNR
       TraverseInternal<Traversal>(std::forward<F>(func), node->left);
-      CallOnNodeFold(std::forward<F>(func), node);
+      CallOnNode(std::forward<F>(func), node);
       TraverseInternal<Traversal>(std::forward<F>(func), node->right);
     } else {
       static_assert(false, "Invalid traversal order.");
@@ -167,18 +243,18 @@ class TreeMap {
 
     if constexpr (Traversal == TreeTraversal::kPreOrder) {
       // NLR
-      seed = CallOnNodeFold(std::forward<F>(func), seed, node);
+      seed = CallOnNode(std::forward<F>(func), seed, node);
       seed = FoldInternal<Traversal>(std::forward<F>(func), seed, node->left);
       seed = FoldInternal<Traversal>(std::forward<F>(func), seed, node->right);
     } else if constexpr (Traversal == TreeTraversal::kPostOrder) {
       // LRN
       seed = FoldInternal<Traversal>(std::forward<F>(func), seed, node->left);
       seed = FoldInternal<Traversal>(std::forward<F>(func), seed, node->right);
-      seed = CallOnNodeFold(std::forward<F>(func), seed, node);
+      seed = CallOnNode(std::forward<F>(func), seed, node);
     } else if constexpr (Traversal == TreeTraversal::kInOrder) {
       // LNR
       seed = FoldInternal<Traversal>(std::forward<F>(func), seed, node->left);
-      seed = CallOnNodeFold(std::forward<F>(func), seed, node);
+      seed = CallOnNode(std::forward<F>(func), seed, node);
       seed = FoldInternal<Traversal>(std::forward<F>(func), seed, node->right);
     } else {
       static_assert(false, "Invalid traversal order.");

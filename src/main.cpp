@@ -16,6 +16,9 @@ int main() {
     *p = p->append(v);
     return p;
   });
-  std::cout << *r;
+  std::cout << *r << '\n';
+
+  auto k_map = map;
+
   return 0;
 }
