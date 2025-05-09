@@ -6,19 +6,23 @@ int main() {
   using lab::TreeTraversal;
 
   lab::TreeMap<int, std::string> map;
-  map.Insert(5, "hi");
-  map.Emplace(0, "hello");
-  map.Insert(8, "basic_string<char> &&value");
+  map.Insert(10, "10");
+  map.Insert(9, "9");
+  map.Insert(8, "8");
+  map.Insert(7, "7");
+  map.Insert(6, "6");
+  map.Insert(5, "5");
+  map.Insert(4, "4");
+  map.Insert(3, "3");
+  map.Insert(2, "2");
+  map.Insert(1, "1");
+
   map.Traverse<TreeTraversal::kPreOrder>(
       [](std::string &v) { std::cout << v << '\n'; });
-  std::string result{};
-  auto r = map.Fold(&result, [](std::string *p, std::string &v) {
-    *p = p->append(v);
-    return p;
-  });
-  std::cout << *r << '\n';
-
-  auto k_map = map;
+  map.Balance();
+  std::cout << '\n';
+  map.Traverse<TreeTraversal::kPreOrder>(
+      [](std::string &v) { std::cout << v << '\n'; });
 
   return 0;
 }
