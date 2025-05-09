@@ -2,10 +2,21 @@
 #include <string>
 #include "tree.h"
 
+class MyTree : public lab::TreeMap<int, std::string> {
+ public:
+  void PrintLeft() {
+    TraverseNodes<lab::TreeTraversal::kInOrder>(
+        [](const Node *const node) { std::cout << node->data << '\n'; },
+        Root());
+  }
+
+  [[nodiscard]] int Key() const { return Root()->key; }
+};
+
 int main() {
   using lab::TreeTraversal;
 
-  lab::TreeMap<int, std::string> map;
+  MyTree map;
   map.Insert(10, "10");
   map.Insert(9, "9");
   map.Insert(8, "8");
@@ -17,12 +28,9 @@ int main() {
   map.Insert(2, "2");
   map.Insert(1, "1");
 
-  map.Traverse<TreeTraversal::kPreOrder>(
-      [](std::string &v) { std::cout << v << '\n'; });
   map.Balance();
-  std::cout << '\n';
-  map.Traverse<TreeTraversal::kPreOrder>(
-      [](std::string &v) { std::cout << v << '\n'; });
-
+  std::cout << map.Key() << '\n';
+  map.EraseTree(7);
+  std::cout << map.Count() << '\n';
   return 0;
 }

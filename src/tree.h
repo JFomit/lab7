@@ -1,9 +1,8 @@
 #ifndef LAB_TREE_H_
 #define LAB_TREE_H_
 
-#include <cassert>
-// #include <concepts>
 #include <bit>
+#include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <type_traits>
@@ -11,7 +10,6 @@
 #include "optional_ref.h"
 
 namespace lab {
-
 enum class TreeTraversal : int8_t {
   kPreOrder = 0,
   kInOrder = 1,
@@ -19,12 +17,18 @@ enum class TreeTraversal : int8_t {
 };
 
 template <typename Key, typename Value>
-// requires(std::totally_ordered<Key> && std::copyable<Key>)
 class TreeMap {
+  static_assert(std::copyable<Key>, "Key type must be copyable.");
+  static_assert(std::totally_ordered<Key>,
+                "Key type must support total ordering.");
+
  public:
   TreeMap() : root_(nullptr) {}
-  ~TreeMap() { delete root_; }
-
+  ~TreeMap() {
+    delete root_;
+    root_ = nullptr;
+    count_ = 0;
+  }
   TreeMap(const TreeMap<Key, Value> &other)
       : root_(other.root_->copy()), count_(other.count_) {}
   TreeMap<Key, Value> &operator=(const TreeMap<Key, Value> &rhs) {
@@ -36,6 +40,22 @@ class TreeMap {
     count_ = rhs.count_;
 
     return *this;
+  }
+  TreeMap(TreeMap<Key, Value> &&other) noexcept : root_(nullptr) {
+    std::swap(root_, other.root_);
+    std::swap(count_, other.count_);
+  }
+  TreeMap<Key, Value> &operator=(TreeMap<Key, Value> &&rhs) noexcept {
+    if (this == &rhs) {
+      return *this;
+    }
+
+    delete root_;
+    root_ = nullptr;
+    count_ = 0;
+
+    std::swap(rhs.root_, root_);
+    std::swap(count_, rhs.count_);
   }
 
   void Insert(const Key &key, Value &&value) {
@@ -59,10 +79,46 @@ class TreeMap {
   size_t Erase(const Key &key) {
     size_t result = 0;
     root_ = EraseInternal(key, root_, result);
-    if (result == 1) {
-      count_--;
-    }
     return result;
+  }
+  size_t EraseTree(const Key &key) {
+    Node **parent = nullptr;
+    Node *current = root_;
+
+    if (root_->key == key) {
+      Clear();
+    }
+
+    while (true) {
+      if (current == nullptr) {
+        return 0;
+      }
+
+      if (key < current->key) {
+        if (current->left == nullptr) {
+          return 0;
+        }
+        parent = &current->left;
+        current = current->left;
+      } else if (key > current->key) {
+        if (current->right == nullptr) {
+          return 0;
+        }
+        parent = &current->right;
+        current = current->right;
+      } else /* if (key == current.key) */ {
+        auto count = FoldNodes(0, [](auto p, auto n) { return ++p; }, current);
+        delete *parent;
+        *parent = nullptr;
+        count_ -= count;
+        return count;
+      }
+    }
+  }
+  void Clear() {
+    delete root_;
+    count_ = 0;
+    root_ = nullptr;
   }
 
   template <TreeTraversal Traversal, typename F>
@@ -215,7 +271,7 @@ class TreeMap {
 
   [[nodiscard]] constexpr size_t Count() const { return count_; }
 
- private:
+ protected:
   struct Node {
     Node(const Key &key, Value &&data)
         : key(key), data(data), left(nullptr), right(nullptr) {}
@@ -247,6 +303,65 @@ class TreeMap {
     Node *right;
   };
 
+  [[nodiscard]] constexpr Node *Root() const { return root_; }
+
+  template <TreeTraversal Traversal, typename F>
+  void TraverseNodes(F &&func, const Node *const node) const {
+    if (node == nullptr) {
+      return;
+    }
+    static_assert(std::is_invocable_v<F, decltype(node)>);
+
+    if constexpr (Traversal == TreeTraversal::kPreOrder) {
+      // NLR
+      func(node);
+      TraverseNodes<Traversal>(std::forward<F>(func), node->left);
+      TraverseNodes<Traversal>(std::forward<F>(func), node->right);
+    } else if constexpr (Traversal == TreeTraversal::kPostOrder) {
+      // LRN
+      TraverseNodes<Traversal>(std::forward<F>(func), node->left);
+      TraverseNodes<Traversal>(std::forward<F>(func), node->right);
+      func(node);
+    } else if constexpr (Traversal == TreeTraversal::kInOrder) {
+      // LNR
+      TraverseNodes<Traversal>(std::forward<F>(func), node->left);
+      func(node);
+      TraverseNodes<Traversal>(std::forward<F>(func), node->right);
+    } else {
+      static_assert(false, "Invalid traversal order.");
+    }
+  }
+  template <TreeTraversal Traversal = TreeTraversal::kPostOrder, typename T,
+            typename F>
+  T FoldNodes(T seed, F &&func, Node *const node) const {
+    if (node == nullptr) {
+      return seed;
+    }
+    static_assert(std::is_invocable_v<F, T, decltype(node)>);
+
+    if constexpr (Traversal == TreeTraversal::kPreOrder) {
+      // NLR
+      seed = func(seed, node);
+      seed = FoldNodes<Traversal>(seed, std::forward<F>(func), node->left);
+      seed = FoldNodes<Traversal>(seed, std::forward<F>(func), node->right);
+    } else if constexpr (Traversal == TreeTraversal::kPostOrder) {
+      // LRN
+      seed = FoldNodes<Traversal>(seed, std::forward<F>(func), node->left);
+      seed = FoldNodes<Traversal>(seed, std::forward<F>(func), node->right);
+      seed = func(seed, node);
+    } else if constexpr (Traversal == TreeTraversal::kInOrder) {
+      // LNR
+      seed = FoldNodes<Traversal>(seed, std::forward<F>(func), node->left);
+      seed = func(seed, node);
+      seed = FoldNodes<Traversal>(seed, std::forward<F>(func), node->right);
+    } else {
+      static_assert(false, "Invalid traversal order.");
+    }
+
+    return seed;
+  }
+
+ private:
   Node *root_;
   size_t count_{};
 
@@ -267,6 +382,7 @@ class TreeMap {
     }
   }
   void VineToTree(Node *root, size_t size) {
+    // std::bit_floor is functionally the same as 2^floor(log_2(size + 1))
     size_t leaves = size + 1 - std::bit_floor(size + 1);
     Compress(root, leaves);
     size = size - leaves;
@@ -513,6 +629,7 @@ class TreeMap {
     }
 
     result = 1;
+    --count_;
     if (root->left == nullptr) {
       Node *temp = root->right;
       delete root;
