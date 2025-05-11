@@ -16,6 +16,10 @@ class QED : public QMainWindow {
   QED(QWidget *parent = nullptr);
   ~QED() override;
 
+ public slots:
+  void on_actionExit_triggered();
+  void on_actionTask_1_triggered();
+
  private:
   Ui::QED *ui_;
 };

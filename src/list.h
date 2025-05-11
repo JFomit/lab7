@@ -62,7 +62,7 @@ class List {
   [[nodiscard]] size_t count() const noexcept { return count_; }
   [[nodiscard]] bool empty() const noexcept { return count_ == 0; }
 
-  void push_back(T &&item) {
+  void push_back(const T &item) {
     auto *node = new ListNode(item);
 #if DEBUG
     node->owner_ = this;
@@ -79,8 +79,42 @@ class List {
     }
     ++count_;
   }
-  void push_front(T &&item) {
+  void push_back(T &&item) {
+    auto *node = new ListNode(std::forward<T>(item));
+#if DEBUG
+    node->owner_ = this;
+#endif
+
+    if (tail_ == nullptr) {
+      assert(head_ == nullptr);
+      tail_ = node;
+      head_ = node;
+    } else {
+      node->previous_ = tail_;
+      tail_->next_ = node;
+      tail_ = node;
+    }
+    ++count_;
+  }
+  void push_front(const T &item) {
     auto *node = new ListNode(item);
+#if DEBUG
+    node->owner_ = this;
+#endif
+
+    if (head_ == nullptr) {
+      assert(tail_ == nullptr);
+      head_ = node;
+      tail_ = node;
+    } else {
+      node->next_ = head_;
+      head_->previous_ = node;
+      head_ = node;
+    }
+    ++count_;
+  }
+  void push_front(T &&item) {
+    auto *node = new ListNode(std::forward<T>(item));
 #if DEBUG
     node->owner_ = this;
 #endif
@@ -228,8 +262,10 @@ class List {
   // Returns: true, is `first` points to an element, preceding element, pointed to by `second`; false, otherwise.
   // This method also returns false if either of the arguments or both are `nullptr`.
   bool is_forward_reachable(ListNode *first, ListNode *second) const {
+#if DEBUG
     assert(first->owner_ == this && "Tried to use node from other List<T>.");
     assert(second->owner_ == this && "Tried to use node from other List<T>.");
+#endif
 
     if (first == nullptr || second == nullptr) {
       return false;
