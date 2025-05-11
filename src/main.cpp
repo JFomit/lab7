@@ -1,5 +1,7 @@
+#include <cassert>
 #include <iostream>
 #include <string>
+#include "hashtable.h"
 #include "tree.h"
 
 class MyTree : public lab::TreeMap<int, std::string> {
@@ -14,23 +16,10 @@ class MyTree : public lab::TreeMap<int, std::string> {
 };
 
 int main() {
-  using lab::TreeTraversal;
-
-  MyTree map;
-  map.Insert(10, "10");
-  map.Insert(9, "9");
-  map.Insert(8, "8");
-  map.Insert(7, "7");
-  map.Insert(6, "6");
-  map.Insert(5, "5");
-  map.Insert(4, "4");
-  map.Insert(3, "3");
-  map.Insert(2, "2");
-  map.Insert(1, "1");
-
-  map.Balance();
-  std::cout << map.Key() << '\n';
-  map.EraseTree(7);
-  std::cout << map.Count() << '\n';
+  lab::HashTable<int, std::string> m;
+  m.Insert(5, "basic_string<char> &&value");
+  m.Insert(4, "bfe");
+  assert(m.Remove(3) == false);
+  assert(m.Remove(5) == true);
   return 0;
 }

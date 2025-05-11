@@ -632,10 +632,14 @@ class TreeMap {
     --count_;
     if (root->left == nullptr) {
       Node *temp = root->right;
+      root->left = nullptr;
+      root->right = nullptr;
       delete root;
       return temp;
     } else if (root->right == nullptr) {
       Node *temp = root->left;
+      root->left = nullptr;
+      root->right = nullptr;
       delete root;
       return temp;
     }
@@ -655,6 +659,8 @@ class TreeMap {
       parent->right = succ->right;
     }
 
+    succ->left = nullptr;
+    succ->right = nullptr;
     delete succ;
     return root;
   }
