@@ -8,49 +8,17 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
-#include <string>
 #include <type_traits>
 #include <utility>
+#include "hasher.h"
 #include "optional_ref.h"
 
 namespace lab {
-template <typename T>
-struct Hasher {
-  using Key = T;
-
-  constexpr uint64_t operator()(const Key &v) const {
-    // https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function
-    const char *bytes = reinterpret_cast<const char *>(&v);
-    uint64_t hash = 0xCBF29CE484222325;
-    const uint64_t kFnvPrime = 0x00000100000001B3;
-    for (size_t i = 0; i < sizeof(v); ++i) {
-      hash ^= bytes[i];
-      hash *= kFnvPrime;
-    }
-    return hash;
-  }
-};
-
-template <>
-struct Hasher<std::string> {
-  using Key = std::string;
-
-  uint64_t operator()(const Key &v) const {
-    const char *bytes = reinterpret_cast<const char *>(v.data());
-    uint64_t hash = 0xCBF29CE484222325;
-    const uint64_t kFnvPrime = 0x00000100000001B3;
-    for (size_t i = 0; i < v.size(); ++i) {
-      hash ^= bytes[i];
-      hash *= kFnvPrime;
-    }
-    return hash;
-  }
-};
-
 // A hashtable with open addressing and linear probing.
 template <typename Key, typename Value, typename Hasher = Hasher<Key>,
           float LoadFactor = 0.8f>
 class HashTable {
+  static constexpr float kLoadFactor = LoadFactor;
   // Contract: Only slots with `status == Status::kOccupied` store anything, all other are uninitialized.
   enum class Status : int8_t {
     kFree = 0,
@@ -112,7 +80,6 @@ class HashTable {
     delete[] buckets_;
   }
 
-  static constexpr float kLoadFactor = LoadFactor;
   void Insert(const Key &key, Value &&value) {
     EnsureCapacity(size_ + 1);
 
@@ -172,11 +139,12 @@ class HashTable {
     } while (true);
   }
 
+  [[nodiscard]] constexpr float load_factor() const { return kLoadFactor; }
   [[nodiscard]] size_t size() const { return size_; }
   [[nodiscard]] size_t capacity() const { return capacity_; }
   [[nodiscard]] Hasher hasher() const { return hasher_; }
 
- protected:
+ private:
   inline static bool ShouldResize(size_t target, size_t actual) {
     return (float)target / (float)actual >= kLoadFactor;
   }
@@ -229,14 +197,13 @@ class HashTable {
         continue;
       }
 
-      ::new (&buckets[hash])
+      ::new ((void *)&buckets[hash])
           Slot(std::forward<const Key>(key), std::forward<Value>(value));
 
       break;
     } while (true);
   }
 
- private:
   Slot *buckets_;
   size_t capacity_;
   size_t size_;
