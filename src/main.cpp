@@ -1,7 +1,7 @@
 #include <cassert>
 #include <iostream>
 #include <string>
-#include "hashtable.h"
+#include "list.h"
 #include "tree.h"
 
 class MyTree : public lab::TreeMap<int, std::string> {
@@ -15,11 +15,20 @@ class MyTree : public lab::TreeMap<int, std::string> {
   [[nodiscard]] int Key() const { return Root()->key; }
 };
 
+struct NoDefault {
+  NoDefault() = delete;
+  NoDefault(int x) : x_(x) {}
+  int x_;
+};
+
 int main() {
-  lab::HashTable<int, std::string> m;
-  m.Insert(5, "basic_string<char> &&value");
-  m.Insert(4, "bfe");
-  assert(m.Remove(3) == false);
-  assert(m.Remove(5) == true);
+  lab::List<int> strings;
+  strings.emplace_back(5);
+  strings.emplace_front(-2);
+  strings.emplace_front(3);
+  strings.emplace_back(17);
+
+  auto *p = strings.max();
+  std::cout << p->item << '\n';
   return 0;
 }
