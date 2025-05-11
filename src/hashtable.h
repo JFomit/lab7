@@ -102,7 +102,7 @@ class HashTable {
           ++i;
           continue;
         case Status::kFree:
-          return lab::NullOpt;
+          return lab::NullRef;
         case Status::kOccupied:
           if (buckets_[hash].GetKey() == key) {
             return lab::MakeOptional(buckets_[hash].GetValue());

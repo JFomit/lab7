@@ -204,20 +204,20 @@ class TreeMap {
   lab::OptionalRef<Value> Find(const Key &key) {
     Node *current = root_;
     if (current == nullptr) {
-      return lab::NullOpt;
+      return lab::NullRef;
     }
 
     while (true) {
       if (key > current->key) {
         // right subtree
         if (current->right == nullptr) {
-          return lab::NullOpt;
+          return lab::NullRef;
         }
         current = current->right;
       } else if (key < current->key) {
         // left subtree
         if (current->left == nullptr) {
-          return lab::NullOpt;
+          return lab::NullRef;
         }
         current = current->left;
       } else /* if (key == current.key) */ {
@@ -229,20 +229,20 @@ class TreeMap {
   const lab::OptionalRef<const Value> Find(const Key &key) const {
     Node *current = root_;
     if (current == nullptr) {
-      return lab::NullOpt;
+      return lab::NullRef;
     }
 
     while (true) {
       if (key > current->key) {
         // right subtree
         if (current->right == nullptr) {
-          return lab::NullOpt;
+          return lab::NullRef;
         }
         current = current->right;
       } else if (key < current->key) {
         // left subtree
         if (current->left == nullptr) {
-          return lab::NullOpt;
+          return lab::NullRef;
         }
         current = current->left;
       } else /* if (key == current.key) */ {
