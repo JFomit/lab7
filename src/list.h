@@ -5,6 +5,7 @@
 #include <compare>
 #include <cstddef>
 #include <type_traits>
+#include <utility>
 
 namespace lab {
 template <typename T>
@@ -23,11 +24,18 @@ class List {
     ListNode(const ListNode &other) = delete;
     ListNode(ListNode &&other) = delete;
 
+    ListNode *next() const { return next_; }
+    ListNode *previous() const { return previous_; }
+
    private:
     friend class List;
 
     ListNode *next_;
     ListNode *previous_;
+
+#if DEBUG
+    List *owner_ = nullptr;
+#endif
   };
 
  public:
@@ -54,53 +62,35 @@ class List {
   [[nodiscard]] size_t count() const noexcept { return count_; }
   [[nodiscard]] bool empty() const noexcept { return count_ == 0; }
 
-  void push_back(const T &item) {
-    auto *node = new ListNode(item);
-    if (tail_ == nullptr) {
-      assert(head_ == nullptr);
-      tail_ = node;
-      head_ = node;
-    } else {
-      node->previous = tail_;
-      tail_->next_ = node;
-      tail_ = node;
-    }
-    ++count_;
-  }
   void push_back(T &&item) {
     auto *node = new ListNode(item);
+#if DEBUG
+    node->owner_ = this;
+#endif
+
     if (tail_ == nullptr) {
       assert(head_ == nullptr);
       tail_ = node;
       head_ = node;
     } else {
-      node->previous = tail_;
+      node->previous_ = tail_;
       tail_->next_ = node;
       tail_ = node;
-    }
-    ++count_;
-  }
-  void push_front(const T &item) {
-    auto *node = new ListNode(item);
-    if (head_ == nullptr) {
-      assert(tail_ == nullptr);
-      head_ = node;
-      tail_ = node;
-    } else {
-      node->next = head_;
-      head_->previous_ = node;
-      head_ = node;
     }
     ++count_;
   }
   void push_front(T &&item) {
     auto *node = new ListNode(item);
+#if DEBUG
+    node->owner_ = this;
+#endif
+
     if (head_ == nullptr) {
       assert(tail_ == nullptr);
       head_ = node;
       tail_ = node;
     } else {
-      node->next = head_;
+      node->next_ = head_;
       head_->previous_ = node;
       head_ = node;
     }
@@ -110,6 +100,10 @@ class List {
   template <typename... Args>
   void emplace_back(Args &&...args) {
     auto *node = new ListNode(args...);
+#if DEBUG
+    node->owner_ = this;
+#endif
+
     if (tail_ == nullptr) {
       assert(head_ == nullptr);
       tail_ = node;
@@ -124,6 +118,10 @@ class List {
   template <typename... Args>
   void emplace_front(Args &&...args) {
     auto *node = new ListNode(args...);
+#if DEBUG
+    node->owner_ = this;
+#endif
+
     if (head_ == nullptr) {
       assert(tail_ == nullptr);
       head_ = node;
@@ -175,6 +173,184 @@ class List {
     --count_;
   }
 
+  // Returns: the new node.
+  ListNode *insert_before(ListNode *marker, T &&value) {
+#if DEBUG
+    assert(marker->owner_ == this &&
+           "Tried to modify a node of other List<T>.");
+#endif
+    assert(!empty() && "Somehow got a pointer to a node of an empty list.");
+
+    if (marker == head_) {
+      push_front(std::forward<T>(value));
+      return head();
+    }
+
+    auto before = marker->previous_;
+    auto *node = new ListNode(std::forward<T>(value));
+#if DEBUG
+    node->owner_ = this;
+#endif
+    node->next_ = marker;
+    node->previous_ = before;
+    marker->previous_ = node;
+    before->next_ = node;
+    ++count_;
+
+    return node;
+  }
+  // Returns: the new node.
+  ListNode *insert_after(ListNode *marker, T &&value) {
+#if DEBUG
+    assert(marker->owner_ == this &&
+           "Tried to modify a node of other List<T>.");
+#endif
+    assert(!empty() && "Somehow got a pointer to a node of an empty list.");
+
+    if (marker == tail_) {
+      push_back(std::forward<T>(value));
+      return tail();
+    }
+
+    auto after = marker->next_;
+    auto *node = new ListNode(std::forward<T>(value));
+#if DEBUG
+    node->owner_ = this;
+#endif
+    node->previous_ = marker;
+    node->next_ = after;
+    after->previous_ = node;
+    marker->next_ = node;
+    ++count_;
+
+    return node;
+  }
+  // Node: if begin == end, replaces that one element with the range
+  void replace_range(ListNode *begin, ListNode *end, const List<T> &values) {
+#if DEBUG
+    assert(begin->owner_ == this && "Tried to use node from other List<T>.");
+    assert(end->owner_ == this && "Tried to use node from other List<T>.");
+    assert(&values != this && "Can't insert to itself.");
+#endif
+
+    if (begin == end) {
+      auto *before = begin->previous_;
+      if (before == nullptr) {
+        values.for_each(
+            [this](auto &item) { push_front(std::forward<T>(item)); });
+      } else {
+        values.for_each([this, &before](auto &item) {
+          before = insert_after(before, std::forward<T>(item));
+        });
+      }
+      auto previous = begin->previous_;
+      auto next = before->next_->next_;
+      if (next != nullptr) {
+        next->previous_ = previous;
+      }
+      if (previous != nullptr) {
+        previous->next_ = next;
+      }
+      delete begin;
+      --count_;
+
+      return;
+    }
+
+#if DEBUG
+    // reachability test
+    {
+      auto *start = begin;
+      while (start != end) {
+        assert(start != nullptr && "end before begin.");
+        start = start->next_;
+      }
+    }
+#endif
+
+    if (values.empty()) {
+      return;
+    }
+
+    auto before = begin->previous_;
+    auto after = end->next_;
+
+    auto to_insert_head = new ListNode(std::forward<T>(values.head()->item));
+    auto to_insert_tail = to_insert_head;
+#if DEBUG
+    to_insert_head->owner_ = this;
+#endif
+
+    auto *iterator = values.head();
+    while (iterator->next_ != nullptr) {
+      iterator = iterator->next_;
+      auto *node_copy = new ListNode(std::forward<T>(iterator->item));
+#if DEBUG
+      node_copy->owner_ = this;
+#endif
+      to_insert_tail->next_ = node_copy;
+      node_copy->previous_ = to_insert_tail;
+      to_insert_tail = node_copy;
+    }
+
+    remove_range(begin, end);
+
+    to_insert_head->previous_ = before;
+    if (before != nullptr) {
+      before->next_ = to_insert_head;
+    }
+    to_insert_tail->next_ = after;
+    if (after != nullptr) {
+      after->previous_ = to_insert_tail;
+    }
+
+    count_ += values.count();
+  }
+
+  void remove_range(ListNode *begin, ListNode *end) {
+#if DEBUG
+    assert(begin->owner_ == this && "Tried to use node from other List<T>.");
+    assert(end->owner_ == this && "Tried to use node from other List<T>.");
+
+    // reachability test
+    {
+      auto *start = begin;
+      while (start != end) {
+        assert(start != nullptr && "end before begin.");
+        start = start->next_;
+      }
+    }
+#endif
+
+    size_t count = 0;
+    auto before = begin->previous_;
+    auto after = end->next_;
+
+    auto iterator = begin;
+    while (true) {
+      if (iterator == end) {
+        ++count;
+        delete iterator;
+        break;
+      }
+
+      auto next = iterator->next_;
+      delete iterator;
+      ++count;
+      iterator = next;
+    }
+
+    if (before != nullptr) {
+      before->next_ = after;
+    }
+    if (after != nullptr) {
+      after->previous_ = before;
+    }
+
+    assert(count <= count_ && "Deleted too much.");
+    count_ -= count;
+  }
+
   ListNode *min() const {
     static_assert(std::three_way_comparable<T>,
                   "For min()/max() to work T must be comparable.");
@@ -191,7 +367,7 @@ class List {
         best_node = current;
         best = current->item;
       }
-      current = current->next;
+      current = current->next_;
     }
 
     return best_node;
@@ -253,7 +429,7 @@ class List {
     auto *current = head_;
     while (current != nullptr) {
       selector(current->item);
-      current = current->next;
+      current = current->next_;
     }
   }
 

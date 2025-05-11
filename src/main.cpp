@@ -22,13 +22,25 @@ struct NoDefault {
 };
 
 int main() {
-  lab::List<int> strings;
-  strings.emplace_back(5);
-  strings.emplace_front(-2);
-  strings.emplace_front(3);
-  strings.emplace_back(17);
+  lab::List<int> to_insert;
+  to_insert.push_back(1);
+  to_insert.push_back(2);
+  to_insert.push_back(3);
+  to_insert.push_back(4);
 
-  auto *p = strings.max();
-  std::cout << p->item << '\n';
+  lab::List<int> strings;
+  strings.push_back(5);
+  strings.push_front(-2);
+  strings.push_front(3);
+  strings.push_back(17);
+
+  auto *p = strings.min();
+  strings.insert_before(p, 8);
+  strings.insert_after(p, 99);
+
+  strings.replace_range(p->previous()->previous(), p->next()->next(),
+                        to_insert);
+  strings.for_each([](auto x) { std::cout << x << ' '; });
+  std::cout << '\n';
   return 0;
 }

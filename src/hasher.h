@@ -23,8 +23,8 @@ template <typename T>
 struct Hasher {
   using Key = T;
 
+  // Deafuls to FNV, see https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function
   constexpr uint64_t operator()(const Key &v) const {
-    // https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function
     const char *bytes = reinterpret_cast<const char *>(&v);
     uint64_t hash = 0xCBF29CE484222325;
     const uint64_t kFnvPrime = 0x00000100000001B3;
