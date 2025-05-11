@@ -225,39 +225,37 @@ class List {
 
     return node;
   }
-  // Node: if begin == end, replaces that one element with the range
+  // Returns: true, is `first` points to an element, preceding element, pointed to by `second`; false, otherwise.
+  // This method also returns false if either of the arguments or both are `nullptr`.
+  bool is_forward_reachable(ListNode *first, ListNode *second) const {
+    assert(first->owner_ == this && "Tried to use node from other List<T>.");
+    assert(second->owner_ == this && "Tried to use node from other List<T>.");
+
+    if (first == nullptr || second == nullptr) {
+      return false;
+    }
+    if (first == second) {
+      return true;
+    }
+
+    auto *start = first;
+    while (start != second) {
+      if (start == nullptr) {
+        return false;
+      }
+      start = start->next_;
+    }
+
+    return true;
+  }
+
+  // Node: if begin == end, inserts after it.
   void replace_range(ListNode *begin, ListNode *end, const List<T> &values) {
 #if DEBUG
     assert(begin->owner_ == this && "Tried to use node from other List<T>.");
     assert(end->owner_ == this && "Tried to use node from other List<T>.");
     assert(&values != this && "Can't insert to itself.");
-#endif
 
-    if (begin == end) {
-      auto *before = begin->previous_;
-      if (before == nullptr) {
-        values.for_each(
-            [this](auto &item) { push_front(std::forward<T>(item)); });
-      } else {
-        values.for_each([this, &before](auto &item) {
-          before = insert_after(before, std::forward<T>(item));
-        });
-      }
-      auto previous = begin->previous_;
-      auto next = before->next_->next_;
-      if (next != nullptr) {
-        next->previous_ = previous;
-      }
-      if (previous != nullptr) {
-        previous->next_ = next;
-      }
-      delete begin;
-      --count_;
-
-      return;
-    }
-
-#if DEBUG
     // reachability test
     {
       auto *start = begin;
@@ -268,43 +266,18 @@ class List {
     }
 #endif
 
-    if (values.empty()) {
-      return;
-    }
-
-    auto before = begin->previous_;
-    auto after = end->next_;
-
-    auto to_insert_head = new ListNode(std::forward<T>(values.head()->item));
-    auto to_insert_tail = to_insert_head;
-#if DEBUG
-    to_insert_head->owner_ = this;
-#endif
-
-    auto *iterator = values.head();
-    while (iterator->next_ != nullptr) {
-      iterator = iterator->next_;
-      auto *node_copy = new ListNode(std::forward<T>(iterator->item));
-#if DEBUG
-      node_copy->owner_ = this;
-#endif
-      to_insert_tail->next_ = node_copy;
-      node_copy->previous_ = to_insert_tail;
-      to_insert_tail = node_copy;
-    }
-
     remove_range(begin, end);
+    auto *current = begin;
+    values.for_each([this, &current](auto &item) {
+      current = insert_after(current, std::forward<T>(item));
+    });
+  }
 
-    to_insert_head->previous_ = before;
-    if (before != nullptr) {
-      before->next_ = to_insert_head;
+  void clear() {
+    while (!empty()) {
+      pop_back();
     }
-    to_insert_tail->next_ = after;
-    if (after != nullptr) {
-      after->previous_ = to_insert_tail;
-    }
-
-    count_ += values.count();
+    assert(count_ == 0);
   }
 
   void remove_range(ListNode *begin, ListNode *end) {
@@ -321,14 +294,21 @@ class List {
       }
     }
 #endif
+    if (begin == end) {
+      return;
+    }
+    if (begin == end->previous_) {
+      assert(begin->next_ == end);
+      return;
+    }
 
     size_t count = 0;
-    auto before = begin->previous_;
-    auto after = end->next_;
+    auto before = begin;
+    auto after = end;
 
-    auto iterator = begin;
+    auto iterator = begin->next_;
     while (true) {
-      if (iterator == end) {
+      if (iterator == end->previous_) {
         ++count;
         delete iterator;
         break;

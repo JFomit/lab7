@@ -32,14 +32,14 @@ int main() {
   strings.push_back(5);
   strings.push_front(-2);
   strings.push_front(3);
-  strings.push_back(17);
+  strings.push_front(17);
 
-  auto *p = strings.min();
-  strings.insert_before(p, 8);
-  strings.insert_after(p, 99);
+  auto *min = strings.min();
+  auto *max = strings.max();
 
-  strings.replace_range(p->previous()->previous(), p->next()->next(),
-                        to_insert);
+  strings.for_each([](auto x) { std::cout << x << ' '; });
+  std::cout << '\n';
+  strings.replace_range(max, max, to_insert);
   strings.for_each([](auto x) { std::cout << x << ' '; });
   std::cout << '\n';
   return 0;
