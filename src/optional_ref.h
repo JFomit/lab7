@@ -35,7 +35,7 @@ struct OptionalRef {
 };
 
 using NullRef_t = detail::NullRef;
-NullRef_t NullRef;
+extern NullRef_t NullRef;
 
 template <typename T>
 OptionalRef<T> MakeOptional(T &ref) {

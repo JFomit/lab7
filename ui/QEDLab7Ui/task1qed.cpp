@@ -1,6 +1,5 @@
 #include "task1qed.h"
 #include <qobject.h>
-#include <ctime>
 #include "dirty_wrapper.h"
 #include "ui_task1qed.h"
 
@@ -10,8 +9,6 @@ Task1QED::Task1QED(QWidget *parent) : QDialog(parent), ui_(new Ui::Task1QED) {
           &Task1QED::UpdateA);
   connect(b_.GetInvoker(), &lab::QObjectDirtyWrapper::WasDirty, this,
           &Task1QED::UpdateB);
-
-  srandom(time(nullptr));
 }
 
 Task1QED::~Task1QED() {
