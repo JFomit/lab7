@@ -35,3 +35,14 @@ void Task3QED::on_pushButton_2_clicked() {
   auto first = iter.Get();
   map.Get().Remove(first);
 }
+
+void Task3QED::on_do_2_clicked() {
+  auto map = map_.AsMut();
+  auto iter = map.Get().GetIter();
+
+  if (!iter.Next()) {
+    return;
+  }
+
+  map.Get().RemoveEven();
+}

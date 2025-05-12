@@ -159,7 +159,11 @@ class HashTable {
       assert(buffer_[index_].status == Status::kOccupied);
       return buffer_[index_].GetValue();
     }
+
     bool Next() {
+      if (capacity_ == 0) {
+        return false;
+      }
       if (buffer_[index_].status == Status::kOccupied) {
         return true;
       }

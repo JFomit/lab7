@@ -26,6 +26,15 @@ class HashSet : public lab::HashTable<int, int> {
     }
   }
 
+  void RemoveEven() {
+    auto *s = const_cast<Slot *>(storage());
+    for (size_t i = 0; i < capacity(); ++i) {
+      if (s[i].status == Status::kOccupied && s[i].GetKey() % 2 == 0) {
+        s[i].Destroy();
+      }
+    }
+  }
+
   void PopulateBuckets(QListWidget *widget) const {
     widget->clear();
 
@@ -53,6 +62,7 @@ class Task3QED : public QDialog {
   void UpdateSet();
   void on_pushButton_2_clicked();
   void on_addButton_clicked();
+  void on_do_2_clicked();
 
  private:
   Ui::Task3QED *ui_;
