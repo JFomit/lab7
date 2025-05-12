@@ -20,6 +20,7 @@ class QED : public QMainWindow {
   void on_actionExit_triggered();
   void on_actionTask_1_triggered();
   void on_actionTask_2_triggered();
+  void on_actionTask_3_triggered();
 
  private:
   Ui::QED *ui_;

@@ -1,6 +1,7 @@
 #include "qed.h"
 #include "task1qed.h"
 #include "task2qed.h"
+#include "task3qed.h"
 #include "ui_qed.h"
 
 QED::QED(QWidget *parent) : QMainWindow(parent), ui_(new Ui::QED) {
@@ -23,6 +24,12 @@ void QED::on_actionTask_1_triggered() {
 
 void QED::on_actionTask_2_triggered() {
   auto *dialog = new Task2QED;
+  dialog->exec();
+  delete dialog;
+}
+
+void QED::on_actionTask_3_triggered() {
+  auto *dialog = new Task3QED;
   dialog->exec();
   delete dialog;
 }

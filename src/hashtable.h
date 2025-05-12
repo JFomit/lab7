@@ -18,6 +18,7 @@ namespace lab {
 template <typename Key, typename Value, typename Hasher = Hasher<Key>,
           float LoadFactor = 0.8f>
 class HashTable {
+ protected:
   static constexpr float kLoadFactor = LoadFactor;
   // Contract: Only slots with `status == Status::kOccupied` store anything, all other are uninitialized.
   enum class Status : int8_t {
@@ -52,6 +53,10 @@ class HashTable {
       // Note: std::launder is needed after the change of object model in P0137R1
       return *std::launder(reinterpret_cast<Value *>(&this->value));
     }
+    const Value &GetValue() const {
+      // Note: std::launder is needed after the change of object model in P0137R1
+      return *std::launder(reinterpret_cast<const Value *>(&this->value));
+    }
 
     // Destroys inner values, i.e. key-value pair.
     void Destroy() {
@@ -79,6 +84,8 @@ class HashTable {
     capacity_ = 0;
     delete[] buckets_;
   }
+
+  [[nodiscard]] bool Empty() const { return size_ == 0; }
 
   void Insert(const Key &key, Value &&value) {
     EnsureCapacity(size_ + 1);
@@ -143,6 +150,21 @@ class HashTable {
   [[nodiscard]] size_t size() const { return size_; }
   [[nodiscard]] size_t capacity() const { return capacity_; }
   [[nodiscard]] Hasher hasher() const { return hasher_; }
+
+  struct Iter {
+    const Value &Get() const {
+      assert(buffer_[index_].status == Status::kOccupied);
+      return buffer_[index_].GetValue();
+    }
+    bool Next() {}
+
+   private:
+    const Slot *buffer_;
+    size_t index_;
+  };
+
+ protected:
+  [[nodiscard]] const Slot *storage() const { return buckets_; }
 
  private:
   inline static bool ShouldResize(size_t target, size_t actual) {
