@@ -30,6 +30,7 @@ class HashSet : public lab::HashTable<int, int> {
     auto *s = const_cast<Slot *>(storage());
     for (size_t i = 0; i < capacity(); ++i) {
       if (s[i].status == Status::kOccupied && s[i].GetKey() % 2 == 0) {
+        s[i].status = Status::kTombstone;
         s[i].Destroy();
       }
     }
