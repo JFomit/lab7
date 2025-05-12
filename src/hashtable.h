@@ -152,16 +152,36 @@ class HashTable {
   [[nodiscard]] Hasher hasher() const { return hasher_; }
 
   struct Iter {
+    Iter(Slot *buckets, size_t capacity)
+        : buffer_(buckets), capacity_(capacity) {}
+
     const Value &Get() const {
       assert(buffer_[index_].status == Status::kOccupied);
       return buffer_[index_].GetValue();
     }
-    bool Next() {}
+    bool Next() {
+      if (buffer_[index_].status == Status::kOccupied) {
+        return true;
+      }
+      while (true) {
+        if (index_ >= capacity_) {
+          return false;
+        }
+        ++index_;
+
+        if (buffer_[index_].status == Status::kOccupied) {
+          return true;
+        }
+      }
+    }
 
    private:
     const Slot *buffer_;
-    size_t index_;
+    size_t capacity_;
+    size_t index_{};
   };
+
+  Iter GetIter() const { return Iter(buckets_, capacity_); }
 
  protected:
   [[nodiscard]] const Slot *storage() const { return buckets_; }

@@ -1,5 +1,4 @@
 #include "task3qed.h"
-#include <cstdlib>
 #include "dirty_wrapper.h"
 #include "ui_task3qed.h"
 
@@ -10,6 +9,7 @@ Task3QED::Task3QED(QWidget *parent) : QDialog(parent), ui_(new Ui::Task3QED) {
 }
 
 void Task3QED::UpdateSet() {
+  map_.AsConst().Get().PopulateBuckets(ui_->listWidget);
   map_.Clear();
 }
 
@@ -30,4 +30,8 @@ void Task3QED::on_pushButton_2_clicked() {
   }
 
   auto map = map_.AsMut();
+  auto iter = map.Get().GetIter();
+  iter.Next();
+  auto first = iter.Get();
+  map.Get().Remove(first);
 }
